@@ -1,2 +1,8 @@
 # macOS
 .DS_store
+
+# tsc output
+bin
+
+# npm
+node_modules

@@ -1,0 +1,24 @@
+{
+  "name": "seek2jazz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./bin/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/terem-andrewc/seek2jazz.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/terem-andrewc/seek2jazz/issues"
+  },
+  "homepage": "https://github.com/terem-andrewc/seek2jazz#readme",
+  "devDependencies": {
+    "typescript": "^4.5.2"
+  }
+}
