@@ -6,3 +6,6 @@ bin
 
 # npm
 node_modules
+
+# googleapis
+credentials.json
