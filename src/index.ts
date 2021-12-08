@@ -1,20 +1,56 @@
 import { google } from "googleapis";
+import fs from "fs";
+import readline from "readline";
+import dotenv from "dotenv";
 
-// See https://stackoverflow.com/a/43645891
-const auth = new google.auth.GoogleAuth({
-  keyFile: "./credentials.json",
-  scopes: ["https://www.googleapis.com/auth/userinfo.profile"],
-});
+dotenv.config();
 
-var oauth2 = google.oauth2({
-  auth: auth,
-  version: "v2",
-});
+async function main() {
+  const oAuth2Client = new google.auth.OAuth2(
+    process.env.CLIENT_ID,
+    process.env.CLIENT_SECRET,
+    process.env.REDIRECT_URI
+  );
 
-oauth2.userinfo.v2.me.get(function (err, res) {
-  if (err) {
-    console.log(err);
-  } else {
-    console.log(res);
+  const tokenPath = "./token.json";
+  if (!fs.existsSync(tokenPath)) {
+    console.log("token.json not found...");
+    console.log("Generating token via OAuth flow...");
+
+    const scope = "https://www.googleapis.com/auth/gmail.readonly";
+    const authUrl = oAuth2Client.generateAuthUrl({
+      access_type: "offline",
+      scope: scope,
+    });
+
+    console.log("Authorize this app by visiting this url:", authUrl);
+    const code = await requestAuthorizationCode();
+
+    console.log("Authorization Code: ", code);
+
+    const tokenResponse = await oAuth2Client.getToken(code);
+    console.log("tokenResponse", tokenResponse);
+
+    fs.writeFileSync(tokenPath, JSON.stringify(tokenResponse.tokens));
   }
-});
+
+  const credentials = JSON.parse(fs.readFileSync(tokenPath, "utf8"));
+  console.log("Using credentials", credentials);
+  console.log("Expiry date: ", new Date(credentials.expiry_date));
+  oAuth2Client.setCredentials(credentials);
+}
+
+main();
+
+function requestAuthorizationCode(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const readLineInterface = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    readLineInterface.question("Enter authorization code: ", (code: string) => {
+      resolve(code);
+      readLineInterface.close();
+    });
+  });
+}
