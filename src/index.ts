@@ -1,4 +1,4 @@
-import { google } from "googleapis";
+import { gmail_v1, google } from "googleapis";
 import fs from "fs";
 import readline from "readline";
 import dotenv from "dotenv";
@@ -39,14 +39,38 @@ async function main() {
   console.log("Expiry date: ", new Date(credentials.expiry_date));
   oAuth2Client.setCredentials(credentials);
 
-  //now try gmail
+  console.log("Loading SEEK job applications...");
   const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
-  const messagesResponse = await gmail.users.messages.list({ userId: "me" });
-  console.log("messages", messagesResponse.data.messages);
+  const messagesResponse = await gmail.users.messages.list({
+    userId: "me",
+    q: "noreply@jobapplications.seek.com.au",
+  });
 
+  const messageIds: string[] =
+    messagesResponse.data.messages?.map((d) => d.id ?? "") ?? [];
+
+  console.log("messageIds", messageIds);
+
+  messageIds.forEach((messageId) => {
+    extractJobApplicationDetails(gmail, messageId);
+  });
 }
 
 main();
+
+async function extractJobApplicationDetails(
+  gmail: gmail_v1.Gmail,
+  messageId: string
+) {
+  const messageInfo = await gmail.users.messages.get({
+    userId: "me",
+    id: messageId,
+  });
+
+  console.log("messageInfo", messageInfo.data);
+  const messagePath = `${messageId}.json`;
+  fs.writeFileSync(messagePath, JSON.stringify(messageInfo.data));
+}
 
 function requestAuthorizationCode(): Promise<string> {
   return new Promise((resolve, reject) => {
