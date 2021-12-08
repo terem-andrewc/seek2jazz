@@ -34,10 +34,16 @@ async function main() {
     fs.writeFileSync(tokenPath, JSON.stringify(tokenResponse.tokens));
   }
 
+  console.log("Loading credentials...");
   const credentials = JSON.parse(fs.readFileSync(tokenPath, "utf8"));
-  console.log("Using credentials", credentials);
   console.log("Expiry date: ", new Date(credentials.expiry_date));
   oAuth2Client.setCredentials(credentials);
+
+  //now try gmail
+  const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
+  const messagesResponse = await gmail.users.messages.list({ userId: "me" });
+  console.log("messages", messagesResponse.data.messages);
+
 }
 
 main();
