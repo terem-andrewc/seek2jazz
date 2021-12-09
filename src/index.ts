@@ -2,6 +2,7 @@ import { gmail_v1, google } from "googleapis";
 import fs from "fs";
 import readline from "readline";
 import dotenv from "dotenv";
+import { decode, findByMimeType, getSubject } from "./messageUtils";
 
 dotenv.config();
 
@@ -62,14 +63,26 @@ async function extractJobApplicationDetails(
   gmail: gmail_v1.Gmail,
   messageId: string
 ) {
-  const messageInfo = await gmail.users.messages.get({
+  const messageResponse = await gmail.users.messages.get({
     userId: "me",
     id: messageId,
   });
 
-  console.log("messageInfo", messageInfo.data);
+  const message = messageResponse.data;
   const messagePath = `${messageId}.json`;
-  fs.writeFileSync(messagePath, JSON.stringify(messageInfo.data));
+  fs.writeFileSync(messagePath, JSON.stringify(message));
+
+  const subject = getSubject(message);
+  console.log("subject", subject);
+
+  if (!message.payload) {
+    return;
+  }
+  const htmlPart = findByMimeType(message.payload, "text/html");
+  console.log("htmlPart", htmlPart);
+
+  const htmlDecoded = decode(htmlPart?.body?.data);
+  console.log("htmlDecoded", htmlDecoded);
 }
 
 function requestAuthorizationCode(): Promise<string> {
