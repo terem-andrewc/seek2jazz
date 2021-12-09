@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@types/node": "^16.11.11",
+    "cheerio": "^1.0.0-rc.10",
     "dotenv": "^10.0.0",
     "googleapis": "^92.0.0"
   }

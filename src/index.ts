@@ -3,6 +3,7 @@ import fs from "fs";
 import readline from "readline";
 import dotenv from "dotenv";
 import { decode, findByMimeType, getSubject } from "./messageUtils";
+import * as cheerio from "cheerio";
 
 dotenv.config();
 
@@ -79,10 +80,15 @@ async function extractJobApplicationDetails(
     return;
   }
   const htmlPart = findByMimeType(message.payload, "text/html");
-  console.log("htmlPart", htmlPart);
+  // console.log("htmlPart", htmlPart);
 
   const htmlDecoded = decode(htmlPart?.body?.data);
   console.log("htmlDecoded", htmlDecoded);
+
+  const $ = cheerio.load(htmlDecoded);
+
+  const name = $("a[title='View candidate']").text();
+  console.log("name", name.trim());
 }
 
 function requestAuthorizationCode(): Promise<string> {
