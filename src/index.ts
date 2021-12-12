@@ -2,7 +2,12 @@ import { gmail_v1, google } from "googleapis";
 import fs from "fs";
 import readline from "readline";
 import dotenv from "dotenv";
-import { decode, findByMimeType, getSubject } from "./messageUtils";
+import {
+  decode,
+  findByMimeType,
+  getAttachments,
+  getSubject,
+} from "./messageUtils";
 import * as cheerio from "cheerio";
 
 dotenv.config();
@@ -91,6 +96,10 @@ async function extractJobApplicationDetails(
 
   const fullName = $("a[title='View candidate']").text();
   const email = $("a[title^='Email']").text();
+
+  //get attachments
+  const attachments = getAttachments(message.payload);
+  console.log("attachments", attachments);
 
   return {
     fullName,

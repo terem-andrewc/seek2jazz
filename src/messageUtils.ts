@@ -33,8 +33,30 @@ export function findByMimeType(
       }
     }
   }
-
   return null;
+}
+
+export function getAttachments(
+  part: gmail_v1.Schema$MessagePart
+): AttachmentInfo[] {
+  const attachments: AttachmentInfo[] = [];
+
+  if (part.filename && part.body?.attachmentId) {
+    const attachmentId = part.body?.attachmentId;
+    attachments.push({
+      filename: part.filename,
+      attachmentId: attachmentId,
+    });
+  }
+
+  if (part.parts) {
+    part.parts.forEach((part) => {
+      const childAttachments = getAttachments(part);
+      attachments.push(...childAttachments);
+    });
+  }
+
+  return attachments;
 }
 
 export function decode(input: string | null | undefined): string {
