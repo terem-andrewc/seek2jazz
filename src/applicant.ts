@@ -1,4 +1,4 @@
 interface Applicant {
-  firstName: string;
-  lastName: string;
+  fullName: string;
+  email: string;
 }

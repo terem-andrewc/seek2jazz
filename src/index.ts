@@ -53,8 +53,11 @@ async function main() {
 
   console.log("messageIds", messageIds);
 
-  messageIds.forEach((messageId) => {
-    extractJobApplicationDetails(gmail, messageId);
+  messageIds.forEach(async (messageId) => {
+    const applicant = await extractJobApplicationDetails(gmail, messageId);
+    if (applicant) {
+      console.log("applicant", applicant);
+    }
   });
 }
 
@@ -63,7 +66,7 @@ main();
 async function extractJobApplicationDetails(
   gmail: gmail_v1.Gmail,
   messageId: string
-) {
+): Promise<Applicant | null> {
   const messageResponse = await gmail.users.messages.get({
     userId: "me",
     id: messageId,
@@ -77,21 +80,22 @@ async function extractJobApplicationDetails(
   console.log("subject", subject);
 
   if (!message.payload) {
-    return;
+    return null;
   }
   const htmlPart = findByMimeType(message.payload, "text/html");
-  // console.log("htmlPart", htmlPart);
 
   const htmlDecoded = decode(htmlPart?.body?.data);
   console.log("htmlDecoded", htmlDecoded);
 
   const $ = cheerio.load(htmlDecoded);
 
-  const name = $("a[title='View candidate']").text();
-  console.log("name:", name.trim());
-
+  const fullName = $("a[title='View candidate']").text();
   const email = $("a[title^='Email']").text();
-  console.log("email:", email.trim());
+
+  return {
+    fullName,
+    email,
+  };
 }
 
 function requestAuthorizationCode(): Promise<string> {
