@@ -88,7 +88,10 @@ async function extractJobApplicationDetails(
   const $ = cheerio.load(htmlDecoded);
 
   const name = $("a[title='View candidate']").text();
-  console.log("name", name.trim());
+  console.log("name:", name.trim());
+
+  const email = $("a[title^='Email']").text();
+  console.log("email:", email.trim());
 }
 
 function requestAuthorizationCode(): Promise<string> {
