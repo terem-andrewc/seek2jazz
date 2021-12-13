@@ -7,11 +7,7 @@ import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail"
 dotenv.config();
 
 async function main() {
-  if (
-    !process.env.CLIENT_ID ||
-    !process.env.CLIENT_SECRET ||
-    !process.env.REDIRECT_URI
-  ) {
+  if (!isValidEnvFile()) {
     throw `Invalid or missing .env file`;
   }
 
@@ -30,6 +26,15 @@ async function main() {
 }
 
 main();
+
+function isValidEnvFile(): boolean {
+  const isMissingVariable =
+    !process.env.CLIENT_ID ||
+    !process.env.CLIENT_SECRET ||
+    !process.env.REDIRECT_URI;
+
+  return !isMissingVariable;
+}
 
 function getOAuth2ClientOptions(): OAuth2ClientOptions {
   return {
