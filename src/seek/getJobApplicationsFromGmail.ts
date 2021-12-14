@@ -12,9 +12,7 @@ import * as cheerio from "cheerio";
 export async function getJobApplicationsFromGmail(
   clientOptions: OAuth2ClientOptions,
   credentials: Credentials
-) {
-  console.log("Loading SEEK job applications...");
-
+): Promise<JobApplication[]> {
   const oAuth2Client = new google.auth.OAuth2(clientOptions);
   oAuth2Client.setCredentials(credentials);
 
@@ -27,12 +25,29 @@ export async function getJobApplicationsFromGmail(
   const messageIds: string[] =
     messagesResponse.data.messages?.map((d) => d.id ?? "") ?? [];
 
-  messageIds.forEach(async (messageId) => {
-    const applicant = await extractJobApplicationDetails(gmail, messageId);
-    if (applicant) {
-      console.log("applicant", applicant);
+  const jobApplications: JobApplication[] = [];
+
+  const results = await Promise.all(
+    messageIds.map((messageId) =>
+      extractJobApplicationDetails(gmail, messageId)
+    )
+  );
+  // messageIds.forEach(async (messageId) => {
+  //   const applicant = await extractJobApplicationDetails(gmail, messageId);
+  //   console.log(applicant);
+  //   if (applicant) {
+  //     jobApplications.push(applicant);
+  //   }
+  // });
+  const filtered: JobApplication[] = [];
+
+  results.forEach((d) => {
+    if (d) {
+      filtered.push(d);
     }
   });
+
+  return filtered;
 }
 
 async function extractJobApplicationDetails(
@@ -45,20 +60,19 @@ async function extractJobApplicationDetails(
   });
 
   const message = messageResponse.data;
-  const messagePath = `${messageId}.json`;
-  fs.writeFileSync(messagePath, JSON.stringify(message));
-
-  const subject = getSubject(message);
-  console.log("subject", subject);
-
   if (!message.payload) {
     return null;
   }
+  
+  // const messagePath = `${messageId}.json`;
+  // fs.writeFileSync(messagePath, JSON.stringify(message));
+
+  // const subject = getSubject(message);
+  // console.log("subject", subject);
+
   const htmlPart = findByMimeType(message.payload, "text/html");
 
   const htmlDecoded = decode(htmlPart?.body?.data);
-  console.log("htmlDecoded", htmlDecoded);
-
   const $ = cheerio.load(htmlDecoded);
 
   const fullName = $("a[title='View candidate']").text();
@@ -66,10 +80,10 @@ async function extractJobApplicationDetails(
 
   //get attachments
   const attachments = getAttachments(message.payload);
-  console.log("attachments", attachments);
 
   return {
     applicantName: fullName,
     applicantEmail: email,
+    attachments: attachments,
   };
 }

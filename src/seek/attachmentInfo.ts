@@ -1,4 +1,4 @@
 interface AttachmentInfo {
-    filename: string;
-    attachmentId: string;
-  }
+  filename: string;
+  attachmentId: string;
+}

@@ -22,7 +22,12 @@ async function main() {
 
   console.log("Loading credentials...");
   const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
-  getJobApplicationsFromGmail(clientOptions, credentials);
+
+  const jobApplications = await getJobApplicationsFromGmail(
+    clientOptions,
+    credentials
+  );
+  console.log("jobApplications", jobApplications);
 }
 
 main();
