@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { requestGmailAuthorization } from "./gmail/requestGmailAuthorization";
 import { OAuth2ClientOptions } from "google-auth-library";
 import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail";
+import { getApplicants } from "./jazz-hr/getApplicants";
 
 dotenv.config();
 
@@ -28,6 +29,9 @@ async function main() {
     credentials
   );
   console.log("jobApplications", jobApplications);
+
+  const result = getApplicants();
+  console.log("jazzHr applicants", result);
 }
 
 main();
@@ -36,7 +40,9 @@ function isValidEnvFile(): boolean {
   const isMissingVariable =
     !process.env.CLIENT_ID ||
     !process.env.CLIENT_SECRET ||
-    !process.env.REDIRECT_URI;
+    !process.env.REDIRECT_URI ||
+    !process.env.JAZZHR_BASE_URL ||
+    !process.env.JAZZHR_API_KEY;
 
   return !isMissingVariable;
 }
