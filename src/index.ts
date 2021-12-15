@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { requestGmailAuthorization } from "./gmail/requestGmailAuthorization";
 import { OAuth2ClientOptions } from "google-auth-library";
 import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail";
-import { getApplicants } from "./jazz-hr/getApplicants";
+import { getApplicants, getJobs } from "./jazz-hr";
 
 dotenv.config();
 
@@ -30,8 +30,10 @@ async function main() {
   );
   console.log("jobApplications", jobApplications);
 
-  const result = getApplicants();
-  console.log("jazzHr applicants", result);
+  const applicants = await getApplicants();
+  console.log("jazzHr applicants", applicants);
+  const jobs = await getJobs();
+  console.log("jazzHr jobs", jobs);
 }
 
 main();
