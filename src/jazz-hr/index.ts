@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 function getAxiosInstance(): AxiosInstance {
   return axios.create({
@@ -9,8 +9,8 @@ function getAxiosInstance(): AxiosInstance {
   });
 }
 
-export async function getApplicants(): Promise<any> {
-  const response = await getAxiosInstance().get("/applicants");
+export async function getApplicants(): Promise<Applicant[]> {
+  const response = await getAxiosInstance().get<Applicant[]>("/applicants");
   return response.data;
 }
 
@@ -19,9 +19,15 @@ export async function getJobs(): Promise<any> {
   return response.data;
 }
 
-export async function getApplicantsByName(name: string): Promise<any> {
-  const response = await getAxiosInstance().get(
+export async function getApplicantsByName(name: string): Promise<Applicant[]> {
+  const response = await getAxiosInstance().get<Applicant[]>(
     `/applicants/name/${encodeURIComponent(name)}`
   );
   return response.data;
+}
+
+export async function getApplicantDetailsById(
+  id: string
+): Promise<AxiosResponse<ApplicantDetails, any>> {
+  return getAxiosInstance().get<ApplicantDetails>(`/applicants/${id}`);
 }

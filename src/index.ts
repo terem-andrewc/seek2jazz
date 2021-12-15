@@ -3,7 +3,13 @@ import dotenv from "dotenv";
 import { requestGmailAuthorization } from "./gmail/requestGmailAuthorization";
 import { OAuth2ClientOptions } from "google-auth-library";
 import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail";
-import { getApplicants, getJobs } from "./jazz-hr";
+import {
+  getApplicantDetailsById,
+  getApplicants,
+  getApplicantsByName,
+  getJobs,
+} from "./jazz-hr";
+import { getApplicantIdByNameAndEmail } from "./jazz-hr/extensions";
 
 dotenv.config();
 
@@ -30,10 +36,21 @@ async function main() {
   );
   console.log("jobApplications", jobApplications);
 
-  const applicants = await getApplicants();
-  console.log("jazzHr applicants", applicants);
-  const jobs = await getJobs();
-  console.log("jazzHr jobs", jobs);
+  //process each job application
+  for (let i = 0; i < jobApplications.length; i++) {
+    const application = jobApplications[i];
+    const applicantSurname = getSurname(application.applicantName);
+    console.log("Applicant surname:", applicantSurname);
+    const applicantId = await getApplicantIdByNameAndEmail(
+      applicantSurname,
+      application.applicantEmail
+    );
+    if (applicantId) {
+      console.log("Applicant found:", application.applicantName, applicantId);
+    } else {
+      console.log("Applicant missing:", application.applicantName);
+    }
+  }
 }
 
 main();
@@ -55,4 +72,9 @@ function getOAuth2ClientOptions(): OAuth2ClientOptions {
     clientSecret: process.env.CLIENT_SECRET,
     redirectUri: process.env.REDIRECT_URI,
   };
+}
+
+function getSurname(fullname: string): string {
+  const parts = fullname.split(" ");
+  return parts[parts.length - 1];
 }
