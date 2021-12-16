@@ -19,7 +19,9 @@ export async function getJobs(): Promise<any> {
   return response.data;
 }
 
-export async function getApplicantsByName(name: string): Promise<Applicant[]> {
+export async function getApplicantsByName(
+  name: string
+): Promise<Applicant[] | Applicant> {
   const response = await getAxiosInstance().get<Applicant[]>(
     `/applicants/name/${encodeURIComponent(name)}`
   );
@@ -28,6 +30,15 @@ export async function getApplicantsByName(name: string): Promise<Applicant[]> {
 
 export async function getApplicantDetailsById(
   id: string
-): Promise<AxiosResponse<ApplicantDetails, any>> {
+): Promise<AxiosResponse<ApplicantDetails>> {
   return getAxiosInstance().get<ApplicantDetails>(`/applicants/${id}`);
+}
+
+export async function postApplicant(
+  request: ApplicantPostRequest
+): Promise<AxiosResponse<ApplicantPostResponse>> {
+  return getAxiosInstance().post<ApplicantPostResponse, any>(
+    `/applicants`,
+    request
+  );
 }

@@ -1,6 +1,6 @@
 // additional methods that wrap API functionality
 
-import { getApplicantDetailsById, getApplicantsByName } from ".";
+import { getApplicantDetailsById, getApplicantsByName } from "./api";
 import HttpStatusCode from "./httpStatusCode";
 
 // JazzHR doesn't have a simple API to check for existing user via email. Need to use this roundabout method for now
@@ -10,23 +10,25 @@ export async function getApplicantIdByNameAndEmail(
 ): Promise<string | undefined> {
   const matchingApplicantsByName = await getApplicantsByName(name);
 
-  const matchingApplicantDetailsResponse = await Promise.all(
-    matchingApplicantsByName.map((applicant) =>
-      getApplicantDetailsById(applicant.id)
-    )
-  );
+  if (Array.isArray(matchingApplicantsByName)) {
+    const matchingApplicantDetailsResponse = await Promise.all(
+      matchingApplicantsByName.map((applicant) =>
+        getApplicantDetailsById(applicant.id)
+      )
+    );
 
-  if (
-    !matchingApplicantDetailsResponse.every(
-      (r) => r.status === HttpStatusCode.OK
-    )
-  ) {
-    throw `Error in getApplicantIdByNameAndEmail`;
+    if (
+      !matchingApplicantDetailsResponse.every(
+        (r) => r.status === HttpStatusCode.OK
+      )
+    ) {
+      throw `Error in getApplicantIdByNameAndEmail`;
+    }
+
+    const match = matchingApplicantDetailsResponse.find(
+      (r) => r.data.email === email
+    );
+    return match?.data.id ?? undefined;
   }
-
-  const match = matchingApplicantDetailsResponse.find(
-    (r) => r.data.email === email
-  );
-
-  return match?.data.id ?? undefined;
+  return matchingApplicantsByName?.id;
 }

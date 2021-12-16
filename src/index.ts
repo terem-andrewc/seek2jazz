@@ -3,13 +3,10 @@ import dotenv from "dotenv";
 import { requestGmailAuthorization } from "./gmail/requestGmailAuthorization";
 import { OAuth2ClientOptions } from "google-auth-library";
 import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail";
-import {
-  getApplicantDetailsById,
-  getApplicants,
-  getApplicantsByName,
-  getJobs,
-} from "./jazz-hr";
 import { getApplicantIdByNameAndEmail } from "./jazz-hr/extensions";
+import _ from "lodash";
+import { postApplicant } from "./jazz-hr/api";
+import HttpStatusCode from "./jazz-hr/httpStatusCode";
 
 dotenv.config();
 
@@ -39,16 +36,33 @@ async function main() {
   //process each job application
   for (let i = 0; i < jobApplications.length; i++) {
     const application = jobApplications[i];
-    const applicantSurname = getSurname(application.applicantName);
-    console.log("Applicant surname:", applicantSurname);
+    const applicantLastname = getLastname(application.applicantName);
+    const applicantFirstname = getFirstname(application.applicantName);
+    console.log("Applicant name:", applicantFirstname, applicantLastname);
     const applicantId = await getApplicantIdByNameAndEmail(
-      applicantSurname,
+      applicantLastname,
       application.applicantEmail
     );
     if (applicantId) {
-      console.log("Applicant found:", application.applicantName, applicantId);
+      console.log("Applicant found:", application.applicantEmail, applicantId);
     } else {
       console.log("Applicant missing:", application.applicantName);
+
+      // creat
+      console.log("Creating applicant:", application.applicantName);
+      const response = await postApplicant({
+        first_name: applicantFirstname,
+        last_name: applicantLastname,
+        email: application.applicantEmail,
+        apikey: process.env.JAZZHR_API_KEY ?? "",
+      });
+
+      console.log(response.data);
+      // if (response.status !== HttpStatusCode.OK) {
+      //   console.log("Applicant creation failed", response.data);
+      //   return;
+      // }
+      // console.log("Applicant created:", response.data);
     }
   }
 }
@@ -74,7 +88,13 @@ function getOAuth2ClientOptions(): OAuth2ClientOptions {
   };
 }
 
-function getSurname(fullname: string): string {
+function getLastname(fullname: string): string {
   const parts = fullname.split(" ");
   return parts[parts.length - 1];
+}
+
+function getFirstname(fullname: string): string {
+  const parts = fullname.split(" ");
+  const firstNameParts = _.dropRight(parts, 1);
+  return firstNameParts.join(" ");
 }
