@@ -55,6 +55,7 @@ async function main() {
         last_name: applicantLastname,
         email: application.applicantEmail,
         apikey: process.env.JAZZHR_API_KEY ?? "",
+        "base64-resume": application.resume.data ?? undefined,
       });
 
       console.log(response.data);

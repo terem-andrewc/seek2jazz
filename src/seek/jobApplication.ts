@@ -1,5 +1,6 @@
 interface JobApplication {
   applicantName: string;
   applicantEmail: string;
-  attachments: AttachmentInfo[];
+  resume: Attachment;
+  coverLetter?: Attachment;
 }

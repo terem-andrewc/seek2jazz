@@ -1,12 +1,8 @@
 import { Credentials, OAuth2ClientOptions } from "google-auth-library";
 import { gmail_v1, google } from "googleapis";
-import {
-  decode,
-  findByMimeType,
-  getAttachments,
-  getSubject,
-} from "./messageUtils";
+import { decode, findByMimeType, getAttachments } from "./messageUtils";
 import * as cheerio from "cheerio";
+import { getAttachment } from "../gmail/api";
 
 export async function getJobApplicationsFromGmail(
   clientOptions: OAuth2ClientOptions,
@@ -70,43 +66,33 @@ async function extractJobApplicationDetails(
 
   //get attachments
   const attachments = getAttachments(message.payload);
-  const resume = attachments.find((item) => isResumeFilename(item.filename));
   const coverLetter = attachments.find((item) =>
     isCoverLetterFilename(item.filename)
   );
 
-  if (resume) {
-    const resumeBase64 = await getAttachmentBase64(
-      gmail,
-      messageId,
-      resume.attachmentId
-    );
+  const resumeInfo = attachments.find((item) =>
+    isResumeFilename(item.filename)
+  );
+  if (!resumeInfo) {
+    throw `Invalid application`;
   }
-  console.log("resume", resume);
+  const resumeData = await getAttachment(
+    gmail,
+    messageId,
+    resumeInfo.attachmentId
+  );
+  const resume: Attachment = {
+    filename: resumeInfo.filename,
+    data: resumeData.data,
+  };
+
   console.log("cover letter", coverLetter);
 
   return {
     applicantName: fullName,
     applicantEmail: email,
-    attachments: attachments,
+    resume: resume,
   };
-}
-
-async function getAttachmentBase64(
-  gmail: gmail_v1.Gmail,
-  messageId: string,
-  attachmentId: string
-): Promise<string> {
-  const messageResponse = await gmail.users.messages.attachments.get({
-    userId: "me",
-    messageId: messageId,
-    id: attachmentId,
-  });
-
-  if (!messageResponse.data.data) {
-    throw `Invalid attachment detected`;
-  }
-  return messageResponse.data.data;
 }
 
 function isResumeFilename(filename: string): boolean {
