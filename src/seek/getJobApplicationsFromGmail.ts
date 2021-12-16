@@ -1,6 +1,5 @@
 import { Credentials, OAuth2ClientOptions } from "google-auth-library";
 import { gmail_v1, google } from "googleapis";
-import fs from "fs";
 import {
   decode,
   findByMimeType,
@@ -25,20 +24,11 @@ export async function getJobApplicationsFromGmail(
   const messageIds: string[] =
     messagesResponse.data.messages?.map((d) => d.id ?? "") ?? [];
 
-  const jobApplications: JobApplication[] = [];
-
   const results = await Promise.all(
     messageIds.map((messageId) =>
       extractJobApplicationDetails(gmail, messageId)
     )
   );
-  // messageIds.forEach(async (messageId) => {
-  //   const applicant = await extractJobApplicationDetails(gmail, messageId);
-  //   console.log(applicant);
-  //   if (applicant) {
-  //     jobApplications.push(applicant);
-  //   }
-  // });
   const filtered: JobApplication[] = [];
 
   results.forEach((d) => {
@@ -63,7 +53,7 @@ async function extractJobApplicationDetails(
   if (!message.payload) {
     return null;
   }
-  
+
   // const messagePath = `${messageId}.json`;
   // fs.writeFileSync(messagePath, JSON.stringify(message));
 
@@ -80,10 +70,48 @@ async function extractJobApplicationDetails(
 
   //get attachments
   const attachments = getAttachments(message.payload);
+  const resume = attachments.find((item) => isResumeFilename(item.filename));
+  const coverLetter = attachments.find((item) =>
+    isCoverLetterFilename(item.filename)
+  );
+
+  if (resume) {
+    const resumeBase64 = await getAttachmentBase64(
+      gmail,
+      messageId,
+      resume.attachmentId
+    );
+  }
+  console.log("resume", resume);
+  console.log("cover letter", coverLetter);
 
   return {
     applicantName: fullName,
     applicantEmail: email,
     attachments: attachments,
   };
+}
+
+async function getAttachmentBase64(
+  gmail: gmail_v1.Gmail,
+  messageId: string,
+  attachmentId: string
+): Promise<string> {
+  const messageResponse = await gmail.users.messages.attachments.get({
+    userId: "me",
+    messageId: messageId,
+    id: attachmentId,
+  });
+
+  if (!messageResponse.data.data) {
+    throw `Invalid attachment detected`;
+  }
+  return messageResponse.data.data;
+}
+
+function isResumeFilename(filename: string): boolean {
+  return filename.toLowerCase().indexOf("resume") >= 0;
+}
+function isCoverLetterFilename(filename: string): boolean {
+  return filename.toLowerCase().indexOf("cover letter") >= 0;
 }
