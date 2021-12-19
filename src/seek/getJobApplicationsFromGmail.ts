@@ -1,13 +1,12 @@
 import { Credentials, OAuth2ClientOptions } from "google-auth-library";
 import { gmail_v1, google } from "googleapis";
-import fs from "fs";
-import {
-  decode,
-  findByMimeType,
-  getAttachments,
-  getSubject,
-} from "./messageUtils";
+import { decode, findByMimeType, getAttachments } from "./messageUtils";
 import * as cheerio from "cheerio";
+import { getAttachment } from "../gmail/api";
+import fs from "fs";
+import base64url from "base64url";
+import utf8 from "utf8";
+import { getAttachmentBase64 } from "./getAttachmentBase64";
 
 export async function getJobApplicationsFromGmail(
   clientOptions: OAuth2ClientOptions,
@@ -25,20 +24,11 @@ export async function getJobApplicationsFromGmail(
   const messageIds: string[] =
     messagesResponse.data.messages?.map((d) => d.id ?? "") ?? [];
 
-  const jobApplications: JobApplication[] = [];
-
   const results = await Promise.all(
     messageIds.map((messageId) =>
       extractJobApplicationDetails(gmail, messageId)
     )
   );
-  // messageIds.forEach(async (messageId) => {
-  //   const applicant = await extractJobApplicationDetails(gmail, messageId);
-  //   console.log(applicant);
-  //   if (applicant) {
-  //     jobApplications.push(applicant);
-  //   }
-  // });
   const filtered: JobApplication[] = [];
 
   results.forEach((d) => {
@@ -63,15 +53,8 @@ async function extractJobApplicationDetails(
   if (!message.payload) {
     return null;
   }
-  
-  // const messagePath = `${messageId}.json`;
-  // fs.writeFileSync(messagePath, JSON.stringify(message));
-
-  // const subject = getSubject(message);
-  // console.log("subject", subject);
 
   const htmlPart = findByMimeType(message.payload, "text/html");
-
   const htmlDecoded = decode(htmlPart?.body?.data);
   const $ = cheerio.load(htmlDecoded);
 
@@ -81,9 +64,48 @@ async function extractJobApplicationDetails(
   //get attachments
   const attachments = getAttachments(message.payload);
 
-  return {
+  const resumeInfo = attachments.find((item) =>
+    isResumeFilename(item.filename)
+  );
+  if (!resumeInfo) {
+    throw `Invalid application`;
+  }
+  const resumeData = await getAttachmentBase64(
+    gmail,
+    messageId,
+    resumeInfo.attachmentId
+  );
+
+  const coverLetter = attachments.find((item) =>
+    isCoverLetterFilename(item.filename)
+  );
+  const result: JobApplication = {
     applicantName: fullName,
     applicantEmail: email,
-    attachments: attachments,
+    resume: {
+      filename: resumeInfo.filename,
+      data: resumeData,
+    },
   };
+
+  if (coverLetter) {
+    const coverLetterData = await getAttachmentBase64(
+      gmail,
+      messageId,
+      coverLetter.attachmentId
+    );
+    result.coverLetter = {
+      filename: coverLetter.filename,
+      data: coverLetterData,
+    };
+  }
+
+  return result;
+}
+
+function isResumeFilename(filename: string): boolean {
+  return filename.toLowerCase().indexOf("resume") >= 0;
+}
+function isCoverLetterFilename(filename: string): boolean {
+  return filename.toLowerCase().indexOf("cover letter") >= 0;
 }

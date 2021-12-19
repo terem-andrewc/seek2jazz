@@ -59,6 +59,32 @@ export function getAttachments(
   return attachments;
 }
 
+export function base64urlToBase64(base64url: string): string {
+  var base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  if (base64.length % 4 != 0) {
+    var padCharacters = 4 - (base64.length % 4);
+    base64 = base64 + "=".repeat(padCharacters);
+  }
+  return base64;
+}
+
+async function getAttachmentBase64(
+  gmail: gmail_v1.Gmail,
+  messageId: string,
+  attachmentId: string
+): Promise<string> {
+  const messageResponse = await gmail.users.messages.attachments.get({
+    userId: "me",
+    messageId: messageId,
+    id: attachmentId,
+  });
+
+  if (!messageResponse.data.data) {
+    throw `Invalid attachment detected`;
+  }
+  return messageResponse.data.data;
+}
+
 export function decode(input: string | null | undefined): string {
   if (!input) {
     return "";

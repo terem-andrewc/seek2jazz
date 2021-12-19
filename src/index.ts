@@ -3,7 +3,10 @@ import dotenv from "dotenv";
 import { requestGmailAuthorization } from "./gmail/requestGmailAuthorization";
 import { OAuth2ClientOptions } from "google-auth-library";
 import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail";
-import { getApplicants, getJobs } from "./jazz-hr";
+import { getApplicantIdByNameAndEmail } from "./jazz-hr/extensions";
+import _ from "lodash";
+import { postApplicant, postFile } from "./jazz-hr/api";
+import HttpStatusCode from "./jazz-hr/httpStatusCode";
 
 dotenv.config();
 
@@ -30,10 +33,46 @@ async function main() {
   );
   console.log("jobApplications", jobApplications);
 
-  const applicants = await getApplicants();
-  console.log("jazzHr applicants", applicants);
-  const jobs = await getJobs();
-  console.log("jazzHr jobs", jobs);
+  //process each job application
+  for (let i = 0; i < jobApplications.length; i++) {
+    const application = jobApplications[i];
+    const applicantLastname = getLastname(application.applicantName);
+    const applicantFirstname = getFirstname(application.applicantName);
+    console.log("Applicant name:", applicantFirstname, applicantLastname);
+    const applicantId = await getApplicantIdByNameAndEmail(
+      applicantLastname,
+      application.applicantEmail
+    );
+    if (applicantId) {
+      console.log("Applicant found:", application.applicantEmail, applicantId);
+    } else {
+      console.log("Applicant missing:", application.applicantName);
+      console.log("Creating applicant:", application.applicantName);
+      const response = await postApplicant({
+        first_name: applicantFirstname,
+        last_name: applicantLastname,
+        email: application.applicantEmail,
+        apikey: process.env.JAZZHR_API_KEY ?? "",
+        "base64-resume": application.resume.data,
+      });
+
+      if (response.status !== HttpStatusCode.OK) {
+        console.log("Applicant creation failed", response);
+        return;
+      }
+      console.log("Applicant created:", response.data);
+      const prospectId = response.data.prospect_id;
+
+      if (application.coverLetter) {
+        const postFileResponse = await postFile({
+          applicant_id: prospectId,
+          filename: application.coverLetter.filename,
+          file_data: application.coverLetter.data,
+        });
+        console.log("Cover letter uploaded:", postFileResponse.data);
+      }
+    }
+  }
 }
 
 main();
@@ -55,4 +94,15 @@ function getOAuth2ClientOptions(): OAuth2ClientOptions {
     clientSecret: process.env.CLIENT_SECRET,
     redirectUri: process.env.REDIRECT_URI,
   };
+}
+
+function getLastname(fullname: string): string {
+  const parts = fullname.split(" ");
+  return parts[parts.length - 1];
+}
+
+function getFirstname(fullname: string): string {
+  const parts = fullname.split(" ");
+  const firstNameParts = _.dropRight(parts, 1);
+  return firstNameParts.join(" ");
 }
