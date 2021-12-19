@@ -28,6 +28,12 @@ export async function getApplicantsByName(
   return response.data;
 }
 
+export async function postFile(
+  request: FilePostRequest
+): Promise<AxiosResponse<any, any>> {
+  return getAxiosInstance().post(`/files`, request);
+}
+
 export async function getApplicantDetailsById(
   id: string
 ): Promise<AxiosResponse<ApplicantDetails>> {

@@ -1,4 +1,4 @@
 interface Attachment {
-  data: string | null | undefined;
+  data: string;
   filename: string;
 }

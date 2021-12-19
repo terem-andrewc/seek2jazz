@@ -5,7 +5,7 @@ import { OAuth2ClientOptions } from "google-auth-library";
 import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail";
 import { getApplicantIdByNameAndEmail } from "./jazz-hr/extensions";
 import _ from "lodash";
-import { postApplicant } from "./jazz-hr/api";
+import { postApplicant, postFile } from "./jazz-hr/api";
 import HttpStatusCode from "./jazz-hr/httpStatusCode";
 
 dotenv.config();
@@ -47,23 +47,31 @@ async function main() {
       console.log("Applicant found:", application.applicantEmail, applicantId);
     } else {
       console.log("Applicant missing:", application.applicantName);
-
-      // creat
       console.log("Creating applicant:", application.applicantName);
       const response = await postApplicant({
         first_name: applicantFirstname,
         last_name: applicantLastname,
         email: application.applicantEmail,
         apikey: process.env.JAZZHR_API_KEY ?? "",
-        "base64-resume": application.resume.data ?? undefined,
       });
 
-      console.log(response.data);
-      // if (response.status !== HttpStatusCode.OK) {
-      //   console.log("Applicant creation failed", response.data);
-      //   return;
-      // }
-      // console.log("Applicant created:", response.data);
+      if (response.status !== HttpStatusCode.OK) {
+        console.log("Applicant creation failed", response);
+        return;
+      }
+      console.log("Applicant created:", response.data);
+      const prospectId = response.data.prospect_id;
+
+      if (!application.resume.data) {
+        console.log("Invalid resume");
+      }
+      const postResumeResult = await postFile({
+        applicant_id: prospectId,
+        filename: application.resume.filename,
+        file_data: application.resume.data ?? "",
+      });
+
+      console.log("Resume uploaded:", postResumeResult.data);
     }
   }
 }

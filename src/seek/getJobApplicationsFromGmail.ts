@@ -3,6 +3,9 @@ import { gmail_v1, google } from "googleapis";
 import { decode, findByMimeType, getAttachments } from "./messageUtils";
 import * as cheerio from "cheerio";
 import { getAttachment } from "../gmail/api";
+import fs from "fs";
+import base64url from "base64url";
+import utf8 from "utf8";
 
 export async function getJobApplicationsFromGmail(
   clientOptions: OAuth2ClientOptions,
@@ -50,14 +53,7 @@ async function extractJobApplicationDetails(
     return null;
   }
 
-  // const messagePath = `${messageId}.json`;
-  // fs.writeFileSync(messagePath, JSON.stringify(message));
-
-  // const subject = getSubject(message);
-  // console.log("subject", subject);
-
   const htmlPart = findByMimeType(message.payload, "text/html");
-
   const htmlDecoded = decode(htmlPart?.body?.data);
   const $ = cheerio.load(htmlDecoded);
 
@@ -66,9 +62,9 @@ async function extractJobApplicationDetails(
 
   //get attachments
   const attachments = getAttachments(message.payload);
-  const coverLetter = attachments.find((item) =>
-    isCoverLetterFilename(item.filename)
-  );
+  // const coverLetter = attachments.find((item) =>
+  //   isCoverLetterFilename(item.filename)
+  // );
 
   const resumeInfo = attachments.find((item) =>
     isResumeFilename(item.filename)
@@ -81,12 +77,15 @@ async function extractJobApplicationDetails(
     messageId,
     resumeInfo.attachmentId
   );
+
+  if (!resumeData.data) {
+    throw `Invalid resume data`;
+  }
+
   const resume: Attachment = {
     filename: resumeInfo.filename,
-    data: resumeData.data,
+    data: base64urlToBase64(resumeData.data),
   };
-
-  console.log("cover letter", coverLetter);
 
   return {
     applicantName: fullName,
@@ -100,4 +99,13 @@ function isResumeFilename(filename: string): boolean {
 }
 function isCoverLetterFilename(filename: string): boolean {
   return filename.toLowerCase().indexOf("cover letter") >= 0;
+}
+
+function base64urlToBase64(base64url: string): string {
+  var base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  if (base64.length % 4 != 0) {
+    var padCharacters = 4 - (base64.length % 4);
+    base64 = base64 + "=".repeat(padCharacters);
+  }
+  return base64;
 }
