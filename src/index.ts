@@ -53,6 +53,7 @@ async function main() {
         last_name: applicantLastname,
         email: application.applicantEmail,
         apikey: process.env.JAZZHR_API_KEY ?? "",
+        "base64-resume": application.resume.data,
       });
 
       if (response.status !== HttpStatusCode.OK) {
@@ -62,16 +63,14 @@ async function main() {
       console.log("Applicant created:", response.data);
       const prospectId = response.data.prospect_id;
 
-      if (!application.resume.data) {
-        console.log("Invalid resume");
+      if (application.coverLetter) {
+        const postFileResponse = await postFile({
+          applicant_id: prospectId,
+          filename: application.coverLetter.filename,
+          file_data: application.coverLetter.data,
+        });
+        console.log("Cover letter uploaded:", postFileResponse.data);
       }
-      const postResumeResult = await postFile({
-        applicant_id: prospectId,
-        filename: application.resume.filename,
-        file_data: application.resume.data ?? "",
-      });
-
-      console.log("Resume uploaded:", postResumeResult.data);
     }
   }
 }

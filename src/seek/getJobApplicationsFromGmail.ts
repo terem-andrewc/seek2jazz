@@ -6,6 +6,7 @@ import { getAttachment } from "../gmail/api";
 import fs from "fs";
 import base64url from "base64url";
 import utf8 from "utf8";
+import { getAttachmentBase64 } from "./getAttachmentBase64";
 
 export async function getJobApplicationsFromGmail(
   clientOptions: OAuth2ClientOptions,
@@ -62,9 +63,6 @@ async function extractJobApplicationDetails(
 
   //get attachments
   const attachments = getAttachments(message.payload);
-  // const coverLetter = attachments.find((item) =>
-  //   isCoverLetterFilename(item.filename)
-  // );
 
   const resumeInfo = attachments.find((item) =>
     isResumeFilename(item.filename)
@@ -72,26 +70,37 @@ async function extractJobApplicationDetails(
   if (!resumeInfo) {
     throw `Invalid application`;
   }
-  const resumeData = await getAttachment(
+  const resumeData = await getAttachmentBase64(
     gmail,
     messageId,
     resumeInfo.attachmentId
   );
 
-  if (!resumeData.data) {
-    throw `Invalid resume data`;
-  }
-
-  const resume: Attachment = {
-    filename: resumeInfo.filename,
-    data: base64urlToBase64(resumeData.data),
-  };
-
-  return {
+  const coverLetter = attachments.find((item) =>
+    isCoverLetterFilename(item.filename)
+  );
+  const result: JobApplication = {
     applicantName: fullName,
     applicantEmail: email,
-    resume: resume,
+    resume: {
+      filename: resumeInfo.filename,
+      data: resumeData,
+    },
   };
+
+  if (coverLetter) {
+    const coverLetterData = await getAttachmentBase64(
+      gmail,
+      messageId,
+      coverLetter.attachmentId
+    );
+    result.coverLetter = {
+      filename: coverLetter.filename,
+      data: coverLetterData,
+    };
+  }
+
+  return result;
 }
 
 function isResumeFilename(filename: string): boolean {
@@ -99,13 +108,4 @@ function isResumeFilename(filename: string): boolean {
 }
 function isCoverLetterFilename(filename: string): boolean {
   return filename.toLowerCase().indexOf("cover letter") >= 0;
-}
-
-function base64urlToBase64(base64url: string): string {
-  var base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-  if (base64.length % 4 != 0) {
-    var padCharacters = 4 - (base64.length % 4);
-    base64 = base64 + "=".repeat(padCharacters);
-  }
-  return base64;
 }
