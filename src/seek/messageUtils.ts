@@ -68,23 +68,6 @@ export function base64urlToBase64(base64url: string): string {
   return base64;
 }
 
-async function getAttachmentBase64(
-  gmail: gmail_v1.Gmail,
-  messageId: string,
-  attachmentId: string
-): Promise<string> {
-  const messageResponse = await gmail.users.messages.attachments.get({
-    userId: "me",
-    messageId: messageId,
-    id: attachmentId,
-  });
-
-  if (!messageResponse.data.data) {
-    throw `Invalid attachment detected`;
-  }
-  return messageResponse.data.data;
-}
-
 export function decode(input: string | null | undefined): string {
   if (!input) {
     return "";

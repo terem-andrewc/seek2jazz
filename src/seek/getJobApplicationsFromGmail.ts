@@ -2,10 +2,6 @@ import { Credentials, OAuth2ClientOptions } from "google-auth-library";
 import { gmail_v1, google } from "googleapis";
 import { decode, findByMimeType, getAttachments } from "./messageUtils";
 import * as cheerio from "cheerio";
-import { getAttachment } from "../gmail/api";
-import fs from "fs";
-import base64url from "base64url";
-import utf8 from "utf8";
 import { getAttachmentBase64 } from "./getAttachmentBase64";
 
 export async function getJobApplicationsFromGmail(
