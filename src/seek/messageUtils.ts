@@ -1,15 +1,27 @@
 import { gmail_v1 } from "googleapis";
 
-export function getSubject(message: gmail_v1.Schema$Message): string {
-  if (!message.payload) {
+// export function getSubject(message: gmail_v1.Schema$Message): string {
+//   if (!message.payload) {
+//     return "";
+//   }
+
+//   if (!message.payload.headers) {
+//     return "";
+//   }
+
+//   const subject = message.payload.headers.find((headerPart) => {
+//     return headerPart.name === "Subject";
+//   });
+
+//   return subject?.value ?? "";
+// }
+
+export function getSubject(messagePart: gmail_v1.Schema$MessagePart): string {
+  if (!messagePart.headers) {
     return "";
   }
 
-  if (!message.payload.headers) {
-    return "";
-  }
-
-  const subject = message.payload.headers.find((headerPart) => {
+  const subject = messagePart.headers.find((headerPart) => {
     return headerPart.name === "Subject";
   });
 

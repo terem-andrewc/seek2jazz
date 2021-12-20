@@ -1,8 +1,14 @@
 import { Credentials, OAuth2ClientOptions } from "google-auth-library";
 import { gmail_v1, google } from "googleapis";
-import { decode, findByMimeType, getAttachments } from "./messageUtils";
+import {
+  decode,
+  findByMimeType,
+  getAttachments,
+  getSubject,
+} from "./messageUtils";
 import * as cheerio from "cheerio";
 import { getAttachmentBase64 } from "./getAttachmentBase64";
+import fs from "fs";
 
 export async function getJobApplicationsFromGmail(
   clientOptions: OAuth2ClientOptions,
@@ -52,10 +58,18 @@ async function extractJobApplicationDetails(
 
   const htmlPart = findByMimeType(message.payload, "text/html");
   const htmlDecoded = decode(htmlPart?.body?.data);
+
+  // // save to file
+  // const htmlFilePath = `${messageId}.html`;
+  // fs.writeFileSync(htmlFilePath, htmlDecoded);
+
   const $ = cheerio.load(htmlDecoded);
 
   const fullName = $("a[title='View candidate']").text();
   const email = $("a[title^='Email']").text();
+
+  const subject = getSubject(message.payload);
+  console.log("subject", subject);
 
   //get attachments
   const attachments = getAttachments(message.payload);
