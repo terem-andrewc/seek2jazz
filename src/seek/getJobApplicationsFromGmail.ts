@@ -1,12 +1,15 @@
 import { Credentials, OAuth2ClientOptions } from "google-auth-library";
 import { gmail_v1, google } from "googleapis";
-import { decode, findByMimeType, getAttachments } from "./messageUtils";
+import {
+  decode,
+  findByMimeType,
+  getAttachments,
+  getPhone,
+  getSubject,
+} from "./messageUtils";
 import * as cheerio from "cheerio";
-import { getAttachment } from "../gmail/api";
-import fs from "fs";
-import base64url from "base64url";
-import utf8 from "utf8";
 import { getAttachmentBase64 } from "./getAttachmentBase64";
+import fs from "fs";
 
 export async function getJobApplicationsFromGmail(
   clientOptions: OAuth2ClientOptions,
@@ -56,10 +59,18 @@ async function extractJobApplicationDetails(
 
   const htmlPart = findByMimeType(message.payload, "text/html");
   const htmlDecoded = decode(htmlPart?.body?.data);
+
+  // // save to file
+  // const htmlFilePath = `${messageId}.html`;
+  // fs.writeFileSync(htmlFilePath, htmlDecoded);
+
   const $ = cheerio.load(htmlDecoded);
 
   const fullName = $("a[title='View candidate']").text();
   const email = $("a[title^='Email']").text();
+
+  const subject = getSubject(message.payload);
+  console.log("subject", subject);
 
   //get attachments
   const attachments = getAttachments(message.payload);
@@ -79,9 +90,12 @@ async function extractJobApplicationDetails(
   const coverLetter = attachments.find((item) =>
     isCoverLetterFilename(item.filename)
   );
+
+  const phone = getPhone(htmlDecoded);
   const result: JobApplication = {
     applicantName: fullName,
     applicantEmail: email,
+    phone: phone,
     resume: {
       filename: resumeInfo.filename,
       data: resumeData,

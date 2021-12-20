@@ -12,7 +12,7 @@ dotenv.config();
 
 async function main() {
   if (!isValidEnvFile()) {
-    throw `Invalid or missing .env file`;
+    throw "Invalid or missing .env file";
   }
 
   const clientOptions = getOAuth2ClientOptions();
@@ -53,6 +53,7 @@ async function main() {
         last_name: applicantLastname,
         email: application.applicantEmail,
         apikey: process.env.JAZZHR_API_KEY ?? "",
+        phone: application.phone,
         "base64-resume": application.resume.data,
       });
 

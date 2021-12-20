@@ -1,5 +1,4 @@
 import { gmail_v1 } from "googleapis";
-import { getAttachment } from "../gmail/api";
 import { base64urlToBase64 } from "./messageUtils";
 
 export async function getAttachmentBase64(
@@ -7,7 +6,17 @@ export async function getAttachmentBase64(
   messageId: string,
   attachmentId: string
 ): Promise<string> {
-  const gmailAttachment = await getAttachment(gmail, messageId, attachmentId);
+  const messageResponse = await gmail.users.messages.attachments.get({
+    userId: "me",
+    messageId: messageId,
+    id: attachmentId,
+  });
+
+  if (!messageResponse.data) {
+    throw `Invalid attachment detected`;
+  }
+
+  const gmailAttachment = messageResponse.data;
 
   if (!gmailAttachment.data) {
     throw `Invalid gmail attachment`;

@@ -1,15 +1,21 @@
 import { gmail_v1 } from "googleapis";
+import * as cheerio from "cheerio";
 
-export function getSubject(message: gmail_v1.Schema$Message): string {
-  if (!message.payload) {
+export function getPhone(messageHtml: string): string {
+  const $ = cheerio.load(messageHtml);
+
+  const phone = $("p:contains('Phone')")?.next()?.text().trim();
+  console.log("Phone", phone);
+
+  return phone;
+}
+
+export function getSubject(messagePart: gmail_v1.Schema$MessagePart): string {
+  if (!messagePart.headers) {
     return "";
   }
 
-  if (!message.payload.headers) {
-    return "";
-  }
-
-  const subject = message.payload.headers.find((headerPart) => {
+  const subject = messagePart.headers.find((headerPart) => {
     return headerPart.name === "Subject";
   });
 
@@ -66,23 +72,6 @@ export function base64urlToBase64(base64url: string): string {
     base64 = base64 + "=".repeat(padCharacters);
   }
   return base64;
-}
-
-async function getAttachmentBase64(
-  gmail: gmail_v1.Gmail,
-  messageId: string,
-  attachmentId: string
-): Promise<string> {
-  const messageResponse = await gmail.users.messages.attachments.get({
-    userId: "me",
-    messageId: messageId,
-    id: attachmentId,
-  });
-
-  if (!messageResponse.data.data) {
-    throw `Invalid attachment detected`;
-  }
-  return messageResponse.data.data;
 }
 
 export function decode(input: string | null | undefined): string {
