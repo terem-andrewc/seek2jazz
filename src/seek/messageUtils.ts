@@ -1,4 +1,5 @@
 import { gmail_v1 } from "googleapis";
+import * as cheerio from "cheerio";
 
 // export function getSubject(message: gmail_v1.Schema$Message): string {
 //   if (!message.payload) {
@@ -15,6 +16,17 @@ import { gmail_v1 } from "googleapis";
 
 //   return subject?.value ?? "";
 // }
+
+export function getPhone(messageHtml: string): string {
+  const $ = cheerio.load(messageHtml);
+
+  const phone = $("p:contains('Phone')")?.next()?.text();
+  console.log("Phone", phone);
+
+  return phone;
+  // const fullName = $("a[title='View candidate']").text();
+  // const email = $("a[title^='Email']").text();
+}
 
 export function getSubject(messagePart: gmail_v1.Schema$MessagePart): string {
   if (!messagePart.headers) {

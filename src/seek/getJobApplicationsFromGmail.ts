@@ -4,6 +4,7 @@ import {
   decode,
   findByMimeType,
   getAttachments,
+  getPhone,
   getSubject,
 } from "./messageUtils";
 import * as cheerio from "cheerio";
@@ -89,9 +90,12 @@ async function extractJobApplicationDetails(
   const coverLetter = attachments.find((item) =>
     isCoverLetterFilename(item.filename)
   );
+
+  const phone = getPhone(htmlDecoded);
   const result: JobApplication = {
     applicantName: fullName,
     applicantEmail: email,
+    phone: phone,
     resume: {
       filename: resumeInfo.filename,
       data: resumeData,
