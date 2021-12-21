@@ -5,7 +5,12 @@ import { OAuth2ClientOptions } from "google-auth-library";
 import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail";
 import { getApplicantIdByNameAndEmail } from "./jazz-hr/extensions";
 import _ from "lodash";
-import { postApplicant, postFile } from "./jazz-hr/api";
+import {
+  getJobsByBoardCode,
+  postApplicant,
+  postApplicants2Jobs,
+  postFile,
+} from "./jazz-hr/api";
 import HttpStatusCode from "./jazz-hr/httpStatusCode";
 
 dotenv.config();
@@ -31,26 +36,26 @@ async function main() {
     clientOptions,
     credentials
   );
-  console.log("jobApplications", jobApplications);
 
   //process each job application
   for (let i = 0; i < jobApplications.length; i++) {
     const application = jobApplications[i];
-    const applicantLastname = getLastname(application.fullName);
-    const applicantFirstname = getFirstname(application.fullName);
-    console.log("Applicant name:", applicantFirstname, applicantLastname);
-    const applicantId = await getApplicantIdByNameAndEmail(
-      applicantLastname,
+    console.log(
+      "Processing job application:",
+      application.fullName,
+      application.internalReference
+    );
+    const firstname = getFirstname(application.fullName);
+    const lastname = getLastname(application.fullName);
+    let applicantId: string | undefined = await getApplicantIdByNameAndEmail(
+      lastname,
       application.email
     );
-    if (applicantId) {
-      console.log("Applicant found:", application.email, applicantId);
-    } else {
-      console.log("Applicant missing:", application.fullName);
+    if (!applicantId) {
       console.log("Creating applicant:", application.fullName);
       const response = await postApplicant({
-        first_name: applicantFirstname,
-        last_name: applicantLastname,
+        first_name: firstname,
+        last_name: lastname,
         email: application.email,
         apikey: process.env.JAZZHR_API_KEY ?? "",
         phone: application.phone,
@@ -58,21 +63,43 @@ async function main() {
       });
 
       if (response.status !== HttpStatusCode.OK) {
-        console.log("Applicant creation failed", response);
-        return;
+        throw `Applicant creation failed: ${response.statusText}`;
       }
-      console.log("Applicant created:", response.data);
-      const prospectId = response.data.prospect_id;
+
+      console.log("Applicant created.", response.data.prospect_id);
+      applicantId = response.data.prospect_id;
 
       if (application.coverLetter) {
         const postFileResponse = await postFile({
-          applicant_id: prospectId,
+          applicant_id: applicantId,
           filename: application.coverLetter.filename,
           file_data: application.coverLetter.data,
         });
         console.log("Cover letter uploaded:", postFileResponse.data);
       }
     }
+
+    //look for job
+    const matchingJobs = await getJobsByBoardCode(
+      application.internalReference
+    );
+    if (matchingJobs.length !== 1 || !matchingJobs[0].id) {
+      throw `Internal reference not found: ${application.internalReference}`;
+    }
+    const jobId = matchingJobs[0].id;
+    console.log("Creating job to applicant link:", jobId, applicantId);
+
+    // server does check existance check
+    const applicant2JobPostResponse = await postApplicants2Jobs({
+      applicant_id: applicantId,
+      job_id: jobId,
+      apikey: process.env.JAZZHR_API_KEY ?? "",
+    });
+
+    if (applicant2JobPostResponse.status !== HttpStatusCode.OK) {
+      throw `Error while creating applicant2job ${applicant2JobPostResponse}`;
+    }
+    console.log("Linkage created", applicant2JobPostResponse.data);
   }
 }
 

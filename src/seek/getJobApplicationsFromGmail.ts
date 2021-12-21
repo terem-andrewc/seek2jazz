@@ -59,15 +59,11 @@ async function extractJobApplicationDetails(
   const htmlPart = findByMimeType(message.payload, "text/html");
   const htmlDecoded = decode(htmlPart?.body?.data);
 
-  // // save to file
-  // const htmlFilePath = `${messageId}.html`;
-  // fs.writeFileSync(htmlFilePath, htmlDecoded);
-
   const $ = cheerio.load(htmlDecoded);
   const fullName = $("a[title='View candidate']").text();
   const email = $("a[title^='Email']").text();
+  const phone = getPhone(htmlDecoded);
   const internalReference = getInternalReference(message.payload);
-  console.log("internalReference", internalReference);
 
   //get attachments
   const attachmentInfo = getAttachmentInfo(message.payload);
@@ -88,7 +84,6 @@ async function extractJobApplicationDetails(
     isCoverLetterFilename(item.filename)
   );
 
-  const phone = getPhone(htmlDecoded);
   const result: JobApplication = {
     internalReference,
     fullName,
