@@ -3,13 +3,12 @@ import { gmail_v1, google } from "googleapis";
 import {
   decode,
   findByMimeType,
-  getAttachments,
+  getAttachmentInfo,
+  getInternalReference,
   getPhone,
-  getSubject,
 } from "./messageUtils";
 import * as cheerio from "cheerio";
 import { getAttachmentBase64 } from "./getAttachmentBase64";
-import fs from "fs";
 
 export async function getJobApplicationsFromGmail(
   clientOptions: OAuth2ClientOptions,
@@ -65,17 +64,15 @@ async function extractJobApplicationDetails(
   // fs.writeFileSync(htmlFilePath, htmlDecoded);
 
   const $ = cheerio.load(htmlDecoded);
-
   const fullName = $("a[title='View candidate']").text();
   const email = $("a[title^='Email']").text();
-
-  const subject = getSubject(message.payload);
-  console.log("subject", subject);
+  const internalReference = getInternalReference(message.payload);
+  console.log("internalReference", internalReference);
 
   //get attachments
-  const attachments = getAttachments(message.payload);
+  const attachmentInfo = getAttachmentInfo(message.payload);
 
-  const resumeInfo = attachments.find((item) =>
+  const resumeInfo = attachmentInfo.find((item) =>
     isResumeFilename(item.filename)
   );
   if (!resumeInfo) {
@@ -87,15 +84,16 @@ async function extractJobApplicationDetails(
     resumeInfo.attachmentId
   );
 
-  const coverLetter = attachments.find((item) =>
+  const coverLetter = attachmentInfo.find((item) =>
     isCoverLetterFilename(item.filename)
   );
 
   const phone = getPhone(htmlDecoded);
   const result: JobApplication = {
-    applicantName: fullName,
-    applicantEmail: email,
-    phone: phone,
+    internalReference,
+    fullName,
+    email,
+    phone,
     resume: {
       filename: resumeInfo.filename,
       data: resumeData,

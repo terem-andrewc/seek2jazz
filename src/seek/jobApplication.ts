@@ -1,6 +1,7 @@
 interface JobApplication {
-  applicantName: string;
-  applicantEmail: string;
+  internalReference: string;
+  fullName: string;
+  email: string;
   phone: string;
   resume: Attachment;
   coverLetter?: Attachment;

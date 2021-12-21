@@ -36,22 +36,22 @@ async function main() {
   //process each job application
   for (let i = 0; i < jobApplications.length; i++) {
     const application = jobApplications[i];
-    const applicantLastname = getLastname(application.applicantName);
-    const applicantFirstname = getFirstname(application.applicantName);
+    const applicantLastname = getLastname(application.fullName);
+    const applicantFirstname = getFirstname(application.fullName);
     console.log("Applicant name:", applicantFirstname, applicantLastname);
     const applicantId = await getApplicantIdByNameAndEmail(
       applicantLastname,
-      application.applicantEmail
+      application.email
     );
     if (applicantId) {
-      console.log("Applicant found:", application.applicantEmail, applicantId);
+      console.log("Applicant found:", application.email, applicantId);
     } else {
-      console.log("Applicant missing:", application.applicantName);
-      console.log("Creating applicant:", application.applicantName);
+      console.log("Applicant missing:", application.fullName);
+      console.log("Creating applicant:", application.fullName);
       const response = await postApplicant({
         first_name: applicantFirstname,
         last_name: applicantLastname,
-        email: application.applicantEmail,
+        email: application.email,
         apikey: process.env.JAZZHR_API_KEY ?? "",
         phone: application.phone,
         "base64-resume": application.resume.data,
