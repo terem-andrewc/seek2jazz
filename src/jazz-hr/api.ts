@@ -19,6 +19,20 @@ export async function getJobs(): Promise<any> {
   return response.data;
 }
 
+export async function getJobsByBoardCode(boardCode: string): Promise<Job[]> {
+  const response = await getAxiosInstance().get(
+    `/jobs/board_code/${boardCode}`
+  );
+  if (response.data === null) {
+    return [];
+  } else if (typeof response.data === "object") {
+    return [response.data];
+  } else if (Array.isArray(response.data)) {
+    return response.data;
+  }
+  return [];
+}
+
 export async function getApplicantsByName(
   name: string
 ): Promise<Applicant[] | Applicant> {
@@ -47,4 +61,10 @@ export async function postApplicant(
     `/applicants`,
     request
   );
+}
+
+export async function postApplicants2Jobs(
+  request: Applicants2JobsPostRequest
+): Promise<AxiosResponse<any>> {
+  return getAxiosInstance().post(`/applicants2jobs`, request);
 }

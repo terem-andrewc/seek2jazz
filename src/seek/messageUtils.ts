@@ -3,14 +3,18 @@ import * as cheerio from "cheerio";
 
 export function getPhone(messageHtml: string): string {
   const $ = cheerio.load(messageHtml);
-
   const phone = $("p:contains('Phone')")?.next()?.text().trim();
-  console.log("Phone", phone);
-
   return phone;
 }
 
-export function getSubject(messagePart: gmail_v1.Schema$MessagePart): string {
+export function getInternalReference(
+  messagePart: gmail_v1.Schema$MessagePart
+): string {
+  const subject = getSubject(messagePart);
+  return subject.replace(/^.*?ref:\s(.*?)$/g, "$1");
+}
+
+function getSubject(messagePart: gmail_v1.Schema$MessagePart): string {
   if (!messagePart.headers) {
     return "";
   }
@@ -42,7 +46,7 @@ export function findByMimeType(
   return null;
 }
 
-export function getAttachments(
+export function getAttachmentInfo(
   part: gmail_v1.Schema$MessagePart
 ): AttachmentInfo[] {
   const attachments: AttachmentInfo[] = [];
@@ -57,7 +61,7 @@ export function getAttachments(
 
   if (part.parts) {
     part.parts.forEach((part) => {
-      const childAttachments = getAttachments(part);
+      const childAttachments = getAttachmentInfo(part);
       attachments.push(...childAttachments);
     });
   }
