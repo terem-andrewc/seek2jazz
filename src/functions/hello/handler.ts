@@ -1,21 +1,65 @@
-import fs from "fs";
-import dotenv from "dotenv";
-import { requestGmailAuthorization } from "./gmail/requestGmailAuthorization";
+import * as fs from "fs";
+import * as _ from "lodash";
+import schema from "./schema";
+import { requestGmailAuthorization } from "../../gmail/requestGmailAuthorization";
 import { OAuth2ClientOptions } from "google-auth-library";
-import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail";
-import { getApplicantIdByNameAndEmail } from "./jazz-hr/extensions";
-import _ from "lodash";
+import {
+  formatJSONResponse,
+  ValidatedEventAPIGatewayProxyEvent,
+} from "../../libs/apiGateway";
+import { getApplicantIdByNameAndEmail } from "../../jazz-hr/extensions";
 import {
   getJobsByBoardCode,
   postApplicant,
   postApplicants2Jobs,
   postFile,
-} from "./jazz-hr/api";
-import HttpStatusCode from "./jazz-hr/httpStatusCode";
+} from "../../jazz-hr/api";
+import HttpStatusCode from "../../jazz-hr/httpStatusCode";
+import { middyfy } from "../../libs/lambda";
+import { getJobApplicationsFromGmail } from "../../seek/getJobApplicationsFromGmail";
 
-dotenv.config();
+const hello: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (
+  event
+) => {
+  await execute();
+  return formatJSONResponse({
+    message: `Hello , welcome to the exciting Serverless world!`,
+    event,
+  });
+};
 
-async function main() {
+function isValidEnvFile(): boolean {
+  const isMissingVariable =
+    !process.env.CLIENT_ID ||
+    !process.env.CLIENT_SECRET ||
+    !process.env.REDIRECT_URI ||
+    !process.env.JAZZHR_BASE_URL ||
+    !process.env.JAZZHR_API_KEY;
+
+  return !isMissingVariable;
+}
+
+function getOAuth2ClientOptions(): OAuth2ClientOptions {
+  return {
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    redirectUri: process.env.REDIRECT_URI,
+  };
+}
+
+function getLastname(fullname: string): string {
+  const parts = fullname.split(" ");
+  return parts[parts.length - 1];
+}
+
+function getFirstname(fullname: string): string {
+  const parts = fullname.split(" ");
+  const firstNameParts = _.dropRight(parts, 1);
+  return firstNameParts.join(" ");
+}
+
+async function execute() {
+  console.log("Executing....");
   if (!isValidEnvFile()) {
     throw "Invalid or missing .env file";
   }
@@ -106,34 +150,4 @@ async function main() {
   }
 }
 
-main();
-
-function isValidEnvFile(): boolean {
-  const isMissingVariable =
-    !process.env.CLIENT_ID ||
-    !process.env.CLIENT_SECRET ||
-    !process.env.REDIRECT_URI ||
-    !process.env.JAZZHR_BASE_URL ||
-    !process.env.JAZZHR_API_KEY;
-
-  return !isMissingVariable;
-}
-
-function getOAuth2ClientOptions(): OAuth2ClientOptions {
-  return {
-    clientId: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
-    redirectUri: process.env.REDIRECT_URI,
-  };
-}
-
-function getLastname(fullname: string): string {
-  const parts = fullname.split(" ");
-  return parts[parts.length - 1];
-}
-
-function getFirstname(fullname: string): string {
-  const parts = fullname.split(" ");
-  const firstNameParts = _.dropRight(parts, 1);
-  return firstNameParts.join(" ");
-}
+export const main = middyfy(hello);

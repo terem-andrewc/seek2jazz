@@ -12,3 +12,6 @@ client_details.json
 credentials.json
 token.json
 .env
+
+# serverless
+.serverless
