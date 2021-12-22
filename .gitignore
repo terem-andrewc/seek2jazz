@@ -12,3 +12,5 @@ client_details.json
 credentials.json
 token.json
 .env
+
+appState.json

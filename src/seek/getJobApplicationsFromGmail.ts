@@ -99,6 +99,7 @@ async function extractJobApplicationDetails(
 
   const dateReceived = new Number(message.internalDate).valueOf();
   const result: JobApplication = {
+    messageId,
     dateReceived,
     internalReference,
     fullName,

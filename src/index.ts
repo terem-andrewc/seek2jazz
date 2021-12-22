@@ -37,6 +37,7 @@ async function main() {
   if (!fs.existsSync(appStatePath)) {
     const initialState: AppState = {
       lastSynchronized: 0,
+      lastMessageId: "",
     };
     fs.writeFileSync(appStatePath, JSON.stringify(initialState));
   }
@@ -51,8 +52,16 @@ async function main() {
     credentials
   );
 
+  //remove last processed
+  _.remove(jobApplications, (item) => item.messageId == appState.lastMessageId);
+
   //items are in random order
   jobApplications.sort((a, b) => a.dateReceived - b.dateReceived);
+
+  if (jobApplications.length === 0) {
+    console.log("No job applications to process...");
+    return;
+  }
 
   try {
     //process each job application
@@ -125,9 +134,13 @@ async function main() {
     }
     // update timestamp if items were processed with no errors
     if (jobApplications.length > 0) {
-      appState.lastSynchronized = Math.max(
-        ...jobApplications.map((d) => d.dateReceived)
-      );
+      const lastMessage = jobApplications.reduce((a, b) => {
+        return a.dateReceived > b.dateReceived ? a : b;
+      });
+
+      appState.lastSynchronized = lastMessage.dateReceived;
+      appState.lastMessageId = lastMessage.messageId;
+
       fs.writeFileSync(appStatePath, JSON.stringify(appState));
       console.log("AppState updated:", appState);
     }
