@@ -17,35 +17,52 @@ dotenv.config();
 
 async function main() {
   if (!isValidEnvFile()) {
-    throw "Invalid or missing .env file";
+    throw "Invalid or missing ENV variables";
   }
 
   const clientOptions = getOAuth2ClientOptions();
 
   const credentialsPath = "./credentials.json";
+  const appStatePath = "./appState.json";
   if (!fs.existsSync(credentialsPath)) {
     console.log("Generating credentials via OAuth flow...");
-    const credentials = requestGmailAuthorization(clientOptions);
+    const credentials = await requestGmailAuthorization(clientOptions);
     fs.writeFileSync(credentialsPath, JSON.stringify(credentials));
   }
 
   console.log("Loading credentials...");
   const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
 
+  console.log("Loading app state...");
+  if (!fs.existsSync(appStatePath)) {
+    const initialState: AppState = {
+      lastSynchronized: 0,
+    };
+    fs.writeFileSync(appStatePath, JSON.stringify(initialState));
+  }
+
+  const appState: AppState = JSON.parse(fs.readFileSync(appStatePath, "utf8"));
+  console.log("App state:", appState);
+
+  const afterTimestamp = Math.floor(appState.lastSynchronized / 1000);
   const jobApplications = await getJobApplicationsFromGmail(
+    afterTimestamp,
     clientOptions,
     credentials
   );
 
-  //process each job application
-  for (let i = 0; i < jobApplications.length; i++) {
-    const application = jobApplications[i];
-    console.log(
-      "Processing job application:",
-      application.fullName,
-      application.internalReference
-    );
-    try {
+  //items are in random order
+  jobApplications.sort((a, b) => a.dateReceived - b.dateReceived);
+
+  try {
+    //process each job application
+    for (let i = 0; i < jobApplications.length; i++) {
+      const application = jobApplications[i];
+      console.log(
+        "Processing job application:",
+        application.fullName,
+        application.internalReference
+      );
       const firstname = getFirstname(application.fullName);
       const lastname = getLastname(application.fullName);
       let applicantId: string | undefined = await getApplicantIdByNameAndEmail(
@@ -67,7 +84,6 @@ async function main() {
           throw `Applicant creation failed: ${response.statusText}`;
         }
 
-        console.log("Applicant created.", response.data.prospect_id);
         applicantId = response.data.prospect_id;
 
         if (application.coverLetter) {
@@ -76,8 +92,11 @@ async function main() {
             filename: application.coverLetter.filename,
             file_data: application.coverLetter.data,
           });
-          console.log("Cover letter uploaded:", postFileResponse.data);
+          if (postFileResponse.status !== HttpStatusCode.OK) {
+            throw `Cover letter upload failed: ${response.statusText}`;
+          }
         }
+        console.log("Applicant created.", response.data.prospect_id);
       }
 
       //look for job
@@ -85,11 +104,14 @@ async function main() {
         application.internalReference
       );
       if (matchingJobs.length !== 1 || !matchingJobs[0].id) {
-        throw `Internal reference not found: ${application.internalReference}`;
+        console.log(
+          `Internal reference not found: ${application.internalReference}`
+        );
+        continue;
       }
-      const jobId = matchingJobs[0].id;
-      console.log("Creating job to applicant link:", jobId, applicantId);
 
+      const jobId = matchingJobs[0].id;
+      console.log("Linking to job:", jobId);
       // server does check existance check
       const applicant2JobPostResponse = await postApplicants2Jobs({
         applicant_id: applicantId,
@@ -100,9 +122,17 @@ async function main() {
       if (applicant2JobPostResponse.status !== HttpStatusCode.OK) {
         throw `Error while creating applicant2job ${applicant2JobPostResponse}`;
       }
-    } catch (reason) {
-      console.log(reason);
     }
+    // update timestamp if items were processed with no errors
+    if (jobApplications.length > 0) {
+      appState.lastSynchronized = Math.max(
+        ...jobApplications.map((d) => d.dateReceived)
+      );
+      fs.writeFileSync(appStatePath, JSON.stringify(appState));
+      console.log("AppState updated:", appState);
+    }
+  } catch (reason) {
+    console.log(reason);
   }
 }
 
