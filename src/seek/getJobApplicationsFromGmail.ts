@@ -84,7 +84,9 @@ async function extractJobApplicationDetails(
     isCoverLetterFilename(item.filename)
   );
 
+  const dateReceived = new Number(message.internalDate).valueOf();
   const result: JobApplication = {
+    dateReceived,
     internalReference,
     fullName,
     email,
