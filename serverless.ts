@@ -1,5 +1,6 @@
 import type { AWS } from "@serverless/typescript";
 
+// @ts-ignore
 import hello from "@functions/hello";
 
 const serverlessConfiguration: AWS = {
@@ -14,11 +15,18 @@ const serverlessConfiguration: AWS = {
       minimumCompressionSize: 1024,
       shouldStartNameWithService: true,
     },
-    environment: {
-      AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1",
-      NODE_OPTIONS: "--enable-source-maps --stack-trace-limit=1000",
-    },
     lambdaHashingVersion: "20201221",
+    // iam: {
+    //   role: {
+    //     statements: [
+    //       {
+    //         Effect: "Allow",
+    //         Action: ["ssm:GetParametersByPath"],
+    //         Resource: ["*"],
+    //       },
+    //     ],
+    //   },
+    // },
   },
   // import the function via paths
   functions: { hello },

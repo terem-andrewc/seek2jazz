@@ -59,7 +59,6 @@ function getFirstname(fullname: string): string {
 }
 
 async function execute() {
-  console.log("Executing....");
   if (!isValidEnvFile()) {
     throw "Invalid or missing .env file";
   }
@@ -67,14 +66,23 @@ async function execute() {
   const clientOptions = getOAuth2ClientOptions();
 
   const credentialsPath = "./credentials.json";
-  if (!fs.existsSync(credentialsPath)) {
-    console.log("Generating credentials via OAuth flow...");
-    const credentials = requestGmailAuthorization(clientOptions);
-    fs.writeFileSync(credentialsPath, JSON.stringify(credentials));
-  }
+  var credentials = null;
+
+  fs.access(credentialsPath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.log("No permissions to read/write at this path");
+    } else {
+      if (!fs.existsSync(credentialsPath)) {
+        console.log("Generating credentials via OAuth flow...");
+        credentials = requestGmailAuthorization(clientOptions);
+        fs.writeFileSync(credentialsPath, JSON.stringify(credentials));
+      }
+    }
+  });
 
   console.log("Loading credentials...");
-  const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+  //const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+  credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS ?? "");
 
   const jobApplications = await getJobApplicationsFromGmail(
     clientOptions,
