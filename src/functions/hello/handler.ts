@@ -65,33 +65,33 @@ async function execute() {
 
   const clientOptions = getOAuth2ClientOptions();
 
-  const credentialsPath = "./credentials.json";
 
   const appStatePath = "./appState.json";
-  var credentials = null;
+  // const credentialsPath = "./credentials.json";
+  // var credentials = null;
 
-  fs.access(credentialsPath, fs.constants.F_OK, (err) => {
-    if (err) {
-      console.log("No permissions to read/write at this path");
-    } else {
-      if (!fs.existsSync(credentialsPath)) {
-        console.log("Generating credentials via OAuth flow...");
-        credentials = requestGmailAuthorization(clientOptions);
-        fs.writeFileSync(credentialsPath, JSON.stringify(credentials));
-      }
-    }
-  });
+  // fs.access(credentialsPath, fs.constants.F_OK, (err) => {
+  //   if (err) {
+  //     console.log("No permissions to read/write at this path");
+  //   } else {
+  //     if (!fs.existsSync(credentialsPath)) {
+  //       console.log("Generating credentials via OAuth flow...");
+  //       credentials = requestGmailAuthorization(clientOptions);
+  //       fs.writeFileSync(credentialsPath, JSON.stringify(credentials));
+  //     }
+  //   }
+  // });
 
   console.log("Loading credentials...");
   //const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
-  credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS ?? "");
+  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS ?? "");
 
   console.log("Loading app state...");
   fs.access(appStatePath, fs.constants.F_OK, (err) => {
     if (err) {
       console.log("No permissions to read/write at this path");
     } else {
-      if (!fs.existsSync(credentialsPath)) {
+      if (!fs.existsSync(appStatePath)) {
         const initialState: AppState = {
           lastSynchronized: 0,
           lastMessageId: "",

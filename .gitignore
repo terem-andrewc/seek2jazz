@@ -17,3 +17,5 @@ appState.json
 # serverless
 .serverless
 .esbuild
+
+lib/**/*

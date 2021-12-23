@@ -9,11 +9,11 @@ export default {
     },
   ],
   environment: {
-    CLIENT_ID: "<CLIENT_ID>",
-    CLIENT_SECRET: "<CLIENT_SECRET>",
-    REDIRECT_URI: "<REDIRECT_URI>",
-    JAZZHR_BASE_URL: "https://api.resumatorapi.com/v1",
-    JAZZHR_API_KEY: "<JAZZHR_API_KEY>",
+    CLIENT_ID: "${env:CLIENT_ID}",
+    CLIENT_SECRET: "${env:CLIENT_SECRET}",
+    REDIRECT_URI: "${env:REDIRECT_URI}",
+    JAZZHR_BASE_URL: "${env:JAZZHR_BASE_URL}",
+    JAZZHR_API_KEY: "${env:JAZZHR_API_KEY}",
     GOOGLE_CREDENTIALS: "{{resolve:ssm:seek2jazzGoogleCredentials:1}}",
   },
 };
