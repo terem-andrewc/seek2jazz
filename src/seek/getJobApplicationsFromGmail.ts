@@ -10,7 +10,15 @@ import {
 import * as cheerio from "cheerio";
 import { getAttachmentBase64 } from "./getAttachmentBase64";
 
+/**
+ *
+ * @param afterTimestamp Only query message after this timestamp. Timestamp is seconds after epoch
+ * @param clientOptions
+ * @param credentials
+ * @returns
+ */
 export async function getJobApplicationsFromGmail(
+  afterTimestamp: number,
   clientOptions: OAuth2ClientOptions,
   credentials: Credentials
 ): Promise<JobApplication[]> {
@@ -18,9 +26,14 @@ export async function getJobApplicationsFromGmail(
   oAuth2Client.setCredentials(credentials);
 
   const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
+
+  const query =
+    afterTimestamp > 0
+      ? `noreply@jobapplications.seek.com.au AND after:${afterTimestamp}`
+      : "noreply@jobapplications.seek.com.au";
   const messagesResponse = await gmail.users.messages.list({
     userId: "me",
-    q: "noreply@jobapplications.seek.com.au",
+    q: query,
   });
 
   const messageIds: string[] =
@@ -84,7 +97,10 @@ async function extractJobApplicationDetails(
     isCoverLetterFilename(item.filename)
   );
 
+  const dateReceived = new Number(message.internalDate).valueOf();
   const result: JobApplication = {
+    messageId,
+    dateReceived,
     internalReference,
     fullName,
     email,
