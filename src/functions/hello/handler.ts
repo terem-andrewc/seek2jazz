@@ -17,6 +17,7 @@ import {
 import HttpStatusCode from "../../jazz-hr/httpStatusCode";
 import { middyfy } from "../../libs/lambda";
 import { getJobApplicationsFromGmail } from "../../seek/getJobApplicationsFromGmail";
+import S3 from "aws-sdk/clients/s3";
 
 const hello: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (
   event
@@ -65,28 +66,13 @@ async function execute() {
 
   const clientOptions = getOAuth2ClientOptions();
 
-
-  const appStatePath = "./appState.json";
-  // const credentialsPath = "./credentials.json";
-  // var credentials = null;
-
-  // fs.access(credentialsPath, fs.constants.F_OK, (err) => {
-  //   if (err) {
-  //     console.log("No permissions to read/write at this path");
-  //   } else {
-  //     if (!fs.existsSync(credentialsPath)) {
-  //       console.log("Generating credentials via OAuth flow...");
-  //       credentials = requestGmailAuthorization(clientOptions);
-  //       fs.writeFileSync(credentialsPath, JSON.stringify(credentials));
-  //     }
-  //   }
-  // });
-
   console.log("Loading credentials...");
-  //const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
   const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS ?? "");
 
   console.log("Loading app state...");
+  const appStatePath = "./appState.json";
+
+  const s3 = new S3();
   fs.access(appStatePath, fs.constants.F_OK, (err) => {
     if (err) {
       console.log("No permissions to read/write at this path");
