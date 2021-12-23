@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as _ from "lodash";
 import schema from "./schema";
+import { requestGmailAuthorization } from "../../gmail/requestGmailAuthorization";
 import { OAuth2ClientOptions } from "google-auth-library";
 import {
   formatJSONResponse,
@@ -27,7 +28,7 @@ const hello: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (
   });
 };
 
-function isValidEnvironment(): boolean {
+function isValidEnvFile(): boolean {
   const isMissingVariable =
     !process.env.CLIENT_ID ||
     !process.env.CLIENT_SECRET ||
@@ -58,14 +59,31 @@ function getFirstname(fullname: string): string {
 }
 
 async function execute() {
-  if (!isValidEnvironment()) {
+  if (!isValidEnvFile()) {
     throw "Invalid or missing ENV variables";
   }
 
   const clientOptions = getOAuth2ClientOptions();
+
+
   const appStatePath = "./appState.json";
+  // const credentialsPath = "./credentials.json";
+  // var credentials = null;
+
+  // fs.access(credentialsPath, fs.constants.F_OK, (err) => {
+  //   if (err) {
+  //     console.log("No permissions to read/write at this path");
+  //   } else {
+  //     if (!fs.existsSync(credentialsPath)) {
+  //       console.log("Generating credentials via OAuth flow...");
+  //       credentials = requestGmailAuthorization(clientOptions);
+  //       fs.writeFileSync(credentialsPath, JSON.stringify(credentials));
+  //     }
+  //   }
+  // });
 
   console.log("Loading credentials...");
+  //const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
   const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS ?? "");
 
   console.log("Loading app state...");
