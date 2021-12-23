@@ -14,6 +14,6 @@ export default {
     REDIRECT_URI: "<REDIRECT_URI>",
     JAZZHR_BASE_URL: "https://api.resumatorapi.com/v1",
     JAZZHR_API_KEY: "<JAZZHR_API_KEY>",
-    GOOGLE_CREDENTIALS: "{{resolve:ssm:GOOGLE_CREDENTIALS:1}}",
+    GOOGLE_CREDENTIALS: "{{resolve:ssm:seek2jazzGoogleCredentials:1}}",
   },
 };
