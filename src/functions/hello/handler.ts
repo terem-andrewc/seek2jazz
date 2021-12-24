@@ -185,7 +185,27 @@ async function execute() {
       appState.lastSynchronized = lastMessage.dateReceived;
       appState.lastMessageId = lastMessage.messageId;
 
-      console.log("AppState updated:", appState);
+      const putObjectOutput: S3.PutObjectOutput = await new Promise(
+        (resolve, reject) => {
+          s3.putObject(
+            {
+              Bucket: "seek2jazz-bucket",
+              Key: "appState.json",
+              Body: JSON.stringify(appState),
+              ContentType: "application/json",
+            },
+            (err, data) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(data);
+              }
+            }
+          );
+        }
+      );
+
+      console.log("AppState updated", putObjectOutput);
     }
   } catch (reason) {
     console.log(reason);
