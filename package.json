@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "push": "npx serverless deploy",
-    "localstart": "serverless invoke local -f hello -l"
+    "start": "npx serverless invoke -f hello -l"
   },
   "engines": {
     "node": ">=14.15.0"

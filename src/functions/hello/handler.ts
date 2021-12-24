@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import * as _ from "lodash";
 import schema from "./schema";
-import { requestGmailAuthorization } from "../../gmail/requestGmailAuthorization";
 import { OAuth2ClientOptions } from "google-auth-library";
 import {
   formatJSONResponse,
@@ -70,25 +69,25 @@ async function execute() {
   const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS ?? "");
 
   console.log("Loading app state...");
-  const appStatePath = "./appState.json";
 
   const s3 = new S3();
-  fs.access(appStatePath, fs.constants.F_OK, (err) => {
-    if (err) {
-      console.log("No permissions to read/write at this path");
-    } else {
-      if (!fs.existsSync(appStatePath)) {
-        const initialState: AppState = {
-          lastSynchronized: 0,
-          lastMessageId: "",
-        };
-        fs.writeFileSync(appStatePath, JSON.stringify(initialState));
+  const appData: S3.GetObjectOutput = await new Promise((resolve, reject) => {
+    s3.getObject(
+      {
+        Bucket: "seek2jazz-bucket",
+        Key: "appState.json",
+      },
+      (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
       }
-    }
+    );
   });
-
-  const appState: AppState = JSON.parse(fs.readFileSync(appStatePath, "utf8"));
-  console.log("App state:", appState);
+  const appState: AppState = JSON.parse(appData.Body.toString("utf-8"));
+  console.log("AppState", appState);
 
   const afterTimestamp = Math.floor(appState.lastSynchronized / 1000);
   const jobApplications = await getJobApplicationsFromGmail(
@@ -186,7 +185,6 @@ async function execute() {
       appState.lastSynchronized = lastMessage.dateReceived;
       appState.lastMessageId = lastMessage.messageId;
 
-      fs.writeFileSync(appStatePath, JSON.stringify(appState));
       console.log("AppState updated:", appState);
     }
   } catch (reason) {
