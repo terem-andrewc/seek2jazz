@@ -1,49 +1,93 @@
-import fs from "fs";
-import dotenv from "dotenv";
-import { requestGmailAuthorization } from "./gmail/requestGmailAuthorization";
+import * as fs from "fs";
+import * as _ from "lodash";
+import schema from "./schema";
 import { OAuth2ClientOptions } from "google-auth-library";
-import { getJobApplicationsFromGmail } from "./seek/getJobApplicationsFromGmail";
-import { getApplicantIdByNameAndEmail } from "./jazz-hr/extensions";
-import _ from "lodash";
+import {
+  formatJSONResponse,
+  ValidatedEventAPIGatewayProxyEvent,
+} from "../../libs/apiGateway";
+import { getApplicantIdByNameAndEmail } from "../../jazz-hr/extensions";
 import {
   getJobsByBoardCode,
   postApplicant,
   postApplicants2Jobs,
   postFile,
-} from "./jazz-hr/api";
-import HttpStatusCode from "./jazz-hr/httpStatusCode";
+} from "../../jazz-hr/api";
+import HttpStatusCode from "../../jazz-hr/httpStatusCode";
+import { middyfy } from "../../libs/lambda";
+import { getJobApplicationsFromGmail } from "../../seek/getJobApplicationsFromGmail";
+import S3 from "aws-sdk/clients/s3";
 
-dotenv.config();
+const hello: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (
+  event
+) => {
+  await execute();
+  return formatJSONResponse({
+    message: `Hello , welcome to the exciting Serverless world!`,
+    event,
+  });
+};
 
-async function main() {
+function isValidEnvFile(): boolean {
+  const isMissingVariable =
+    !process.env.CLIENT_ID ||
+    !process.env.CLIENT_SECRET ||
+    !process.env.REDIRECT_URI ||
+    !process.env.JAZZHR_BASE_URL ||
+    !process.env.JAZZHR_API_KEY;
+
+  return !isMissingVariable;
+}
+
+function getOAuth2ClientOptions(): OAuth2ClientOptions {
+  return {
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    redirectUri: process.env.REDIRECT_URI,
+  };
+}
+
+function getLastname(fullname: string): string {
+  const parts = fullname.split(" ");
+  return parts[parts.length - 1];
+}
+
+function getFirstname(fullname: string): string {
+  const parts = fullname.split(" ");
+  const firstNameParts = _.dropRight(parts, 1);
+  return firstNameParts.join(" ");
+}
+
+async function execute() {
   if (!isValidEnvFile()) {
     throw "Invalid or missing ENV variables";
   }
 
   const clientOptions = getOAuth2ClientOptions();
 
-  const credentialsPath = "./credentials.json";
-  const appStatePath = "./appState.json";
-  if (!fs.existsSync(credentialsPath)) {
-    console.log("Generating credentials via OAuth flow...");
-    const credentials = await requestGmailAuthorization(clientOptions);
-    fs.writeFileSync(credentialsPath, JSON.stringify(credentials));
-  }
-
   console.log("Loading credentials...");
-  const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS ?? "");
 
   console.log("Loading app state...");
-  if (!fs.existsSync(appStatePath)) {
-    const initialState: AppState = {
-      lastSynchronized: 0,
-      lastMessageId: "",
-    };
-    fs.writeFileSync(appStatePath, JSON.stringify(initialState));
-  }
 
-  const appState: AppState = JSON.parse(fs.readFileSync(appStatePath, "utf8"));
-  console.log("App state:", appState);
+  const s3 = new S3();
+  const appData: S3.GetObjectOutput = await new Promise((resolve, reject) => {
+    s3.getObject(
+      {
+        Bucket: "seek2jazz-bucket",
+        Key: "appState.json",
+      },
+      (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      }
+    );
+  });
+  const appState: AppState = JSON.parse(appData.Body.toString("utf-8"));
+  console.log("AppState", appState);
 
   const afterTimestamp = Math.floor(appState.lastSynchronized / 1000);
   const jobApplications = await getJobApplicationsFromGmail(
@@ -141,42 +185,31 @@ async function main() {
       appState.lastSynchronized = lastMessage.dateReceived;
       appState.lastMessageId = lastMessage.messageId;
 
-      fs.writeFileSync(appStatePath, JSON.stringify(appState));
-      console.log("AppState updated:", appState);
+      const putObjectOutput: S3.PutObjectOutput = await new Promise(
+        (resolve, reject) => {
+          s3.putObject(
+            {
+              Bucket: "seek2jazz-bucket",
+              Key: "appState.json",
+              Body: JSON.stringify(appState),
+              ContentType: "application/json",
+            },
+            (err, data) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(data);
+              }
+            }
+          );
+        }
+      );
+
+      console.log("AppState updated", putObjectOutput);
     }
   } catch (reason) {
     console.log(reason);
   }
 }
 
-main();
-
-function isValidEnvFile(): boolean {
-  const isMissingVariable =
-    !process.env.CLIENT_ID ||
-    !process.env.CLIENT_SECRET ||
-    !process.env.REDIRECT_URI ||
-    !process.env.JAZZHR_BASE_URL ||
-    !process.env.JAZZHR_API_KEY;
-
-  return !isMissingVariable;
-}
-
-function getOAuth2ClientOptions(): OAuth2ClientOptions {
-  return {
-    clientId: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
-    redirectUri: process.env.REDIRECT_URI,
-  };
-}
-
-function getLastname(fullname: string): string {
-  const parts = fullname.split(" ");
-  return parts[parts.length - 1];
-}
-
-function getFirstname(fullname: string): string {
-  const parts = fullname.split(" ");
-  const firstNameParts = _.dropRight(parts, 1);
-  return firstNameParts.join(" ");
-}
+export const main = middyfy(hello);
