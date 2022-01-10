@@ -1,8 +1,10 @@
-# Serverless - AWS Node.js Typescript
+## Introduction
 
-This project has been generated using the `aws-nodejs-typescript` template from the [Serverless framework](https://www.serverless.com/).
+This is the seek2jazz project. It aims to fix issues with SEEK applicant alerts and JazzHR.
 
-For detailed instructions, please refer to the [documentation](https://www.serverless.com/framework/docs/providers/aws/).
+## Usage
+
+See [usage guide](docs/usage-guide.md)
 
 ## Installation/deployment instructions
 
@@ -16,9 +18,9 @@ Depending on your preferred package manager, follow the instructions below to de
 - Run `npx sls deploy` to deploy this stack to AWS
 
 ### Setup Gmail Authorization Credentials
-- Use the 
-- Paste Google Credentials for target email into AWS Parameter store
 
+- Use the
+- Paste Google Credentials for target email into AWS Parameter store
 
 ## Test your service
 
