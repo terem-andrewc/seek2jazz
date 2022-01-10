@@ -4,11 +4,10 @@
 
 1. Log into JazzHR, 
 2. Select the job you want to link
-3. Click "ADVERTISE" on the toolbar
-4. Click "CUSTOM LINK"
-5. Click "CREATE JOB LINK"
-6. Extract the JazzHR job code from the url. The job code are unique characters. 
-For example, for the link:
+3. Click **ADVERTISE** on the toolbar
+4. Click **CUSTOM LINK**
+5. Click **CREATE JOB LINK**
+6. Extract the JazzHR job code from the url. The job code are the unique characters. For example, for the link:
 
 `https://teremtechnologiessandbox.applytojob.com/apply/EB8yru5vhf/Sample-Job`
 
@@ -21,7 +20,7 @@ The job code is `EB8yru5vhf`
 3. Paste the job code into the internal reference field
 4. Send the email alerts to:
 
-`job.applications@terem.com.au`
+    job.applications@terem.com.au
 
 Done!
 
