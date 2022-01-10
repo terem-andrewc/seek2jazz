@@ -2,6 +2,12 @@
 
 This is the seek2jazz project. It aims to fix issues with SEEK applicant alerts and JazzHR.
 
+## Problems with SEEK ads and JazzHR
+
+When a SEEK applicant sends a resume + cover letter, JazzHR assumes each attachment is a new candidate, creating a duplicate applicant.
+
+While duplicate applicants can be fixed in JazzHR, this involves manual work, increasing load on the HR team.
+
 ## Usage
 
 See [usage guide](docs/usage-guide.md)

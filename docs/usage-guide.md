@@ -1,9 +1,3 @@
-## Problems with SEEK applicant alerts and JazzHR
-
-When using JazzHR's email for SEEK job applicant alerts, duplicate JazzHR applicants are sometimes created. When an applicant applies with a resume + cover letter, JazzHR assumes each attachment is a new candidate, creating a duplicate applicant.
-
-While duplicate applicants can be fixed in JazzHR, fixing involves alot of manual work, increasing load on the HR team.
-
 # Using seek2jazz
 
 ## Step 1. Getting the JazzHR job code
@@ -11,7 +5,7 @@ While duplicate applicants can be fixed in JazzHR, fixing involves alot of manua
 1. Log into JazzHR, 
 2. Select the job you want to link
 3. Click "ADVERTISE" on the toolbar
-4. Jump to "CUSTOM LINK"
+4. Click "CUSTOM LINK"
 5. Click "CREATE JOB LINK"
 6. Extract the JazzHR job code from the url. The job code are unique characters. 
 For example, for the link:
