@@ -1,4 +1,3 @@
-import * as fs from "fs";
 import * as _ from "lodash";
 import schema from "./schema";
 import { OAuth2ClientOptions } from "google-auth-library";
